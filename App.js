@@ -1,20 +1,48 @@
+import { useEffect, useState } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { Text } from 'react-native'
+import { Text, ActivityIndicator, View } from 'react-native'
+import { onAuthStateChanged } from 'firebase/auth'
+import { auth } from './src/services/firebase'
 
 import HomeScreen from './src/screens/HomeScreen'
 import SearchScreen from './src/screens/SearchScreen'
 import AlertsScreen from './src/screens/AlertsScreen'
 import ProfileScreen from './src/screens/ProfileScreen'
+import LoginScreen from './src/screens/auth/LoginScreen'
 
 const Tab = createBottomTabNavigator()
-
-const NAVY = '#0F1F35'
 const AMBER = '#E07B2A'
 const MUTED = '#7B8FA6'
 
 export default function App() {
+  const [user, setUser] = useState(undefined) // undefined = loading
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, u => setUser(u ?? null))
+    return unsub
+  }, [])
+
+  // Loading state
+  if (user === undefined) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0F1F35', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color={AMBER} size="large" />
+      </View>
+    )
+  }
+
+  // Not logged in
+  if (!user) {
+    return (
+      <SafeAreaProvider>
+        <LoginScreen />
+      </SafeAreaProvider>
+    )
+  }
+
+  // Logged in
   return (
     <SafeAreaProvider>
       <NavigationContainer>
@@ -26,9 +54,9 @@ export default function App() {
             tabBarInactiveTintColor: MUTED,
           }}
         >
-          <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text> }} />
-          <Tab.Screen name="Search" component={SearchScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔍</Text> }} />
-          <Tab.Screen name="Alerts" component={AlertsScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚡</Text> }} />
+          <Tab.Screen name="Home"    component={HomeScreen}    options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text> }} />
+          <Tab.Screen name="Search"  component={SearchScreen}  options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔍</Text> }} />
+          <Tab.Screen name="Alerts"  component={AlertsScreen}  options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚡</Text> }} />
           <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👤</Text> }} />
         </Tab.Navigator>
       </NavigationContainer>
