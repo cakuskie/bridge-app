@@ -29,11 +29,6 @@
       "android": {
         "serviceAccountKeyPath": "./google-play-key.json",
         "track": "internal"
-      },
-      "ios": {
-        "appleId": "cakuskie@gmail.com",
-        "ascAppId": "",
-        "appleTeamId": ""
       }
     }
   }
