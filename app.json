@@ -1,26 +1,35 @@
 {
   "expo": {
-    "name": "bridge-app",
+    "name": "Bridge",
     "slug": "bridge-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0F1F35"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bridgetx.app",
+      "buildNumber": "1"
     },
     "android": {
+      "package": "com.bridgetx.app",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0F1F35",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "permissions": [
+        "NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -30,6 +39,17 @@
         "projectId": "ec867eed-2166-468d-b6bc-7bbf943560a1"
       }
     },
-    "owner": "ckuskie"
+    "owner": "ckuskie",
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#E07B2A",
+          "androidMode": "default",
+          "androidCollapsedTitle": "Bridge Storm Alert"
+        }
+      ]
+    ]
   }
 }
