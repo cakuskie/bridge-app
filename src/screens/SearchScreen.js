@@ -11,7 +11,7 @@ const MUTED  = '#7B8FA6'
 const WHITE  = '#FAFAFA'
 const BLUE   = '#3B82F6'
 
-const FILTERS = ['All', 'Storm Repair', 'Hail Damage', 'Full Replace', 'Gutters', 'Inspections', 'Windows', 'Siding', 'Insurance Claims']
+const FILTERS = ['All', 'Insurance', 'Retail', 'Storm Repair', 'Hail Damage', 'Full Replace', 'Gutters', 'Inspections', 'Windows', 'Siding', 'Insurance Claims']
 
 export default function SearchScreen() {
   const [contractors, setContractors] = useState([])

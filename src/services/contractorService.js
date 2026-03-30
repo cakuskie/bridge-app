@@ -2,6 +2,8 @@ import { collection, doc, getDoc, getDocs, query, where, orderBy, updateDoc, add
 import { db } from './firebase.js'
 
 export const ALL_SERVICES = [
+  'Insurance',
+  'Retail',
   'Storm Repair',
   'Hail Damage',
   'Full Replace',
