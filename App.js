@@ -4,11 +4,16 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { Text, ActivityIndicator, View } from 'react-native'
 import { onAuthStateChanged } from 'firebase/auth'
-import { auth } from './src/services/firebase'
+import { doc, getDoc } from 'firebase/firestore'
+import { auth, db } from './src/services/firebase'
 import HomeScreen from './src/screens/HomeScreen'
 import SearchScreen from './src/screens/SearchScreen'
 import AlertsScreen from './src/screens/AlertsScreen'
 import ProfileScreen from './src/screens/ProfileScreen'
+import ContractorDashboardScreen from './src/screens/ContractorDashboardScreen'
+import ContractorJobsScreen from './src/screens/ContractorJobsScreen'
+import ContractorPayoutsScreen from './src/screens/ContractorPayoutsScreen'
+import ContractorProfileScreen from './src/screens/ContractorProfileScreen'
 import LoginScreen from './src/screens/auth/LoginScreen'
 import OfflineBanner from './src/components/OfflineBanner'
 import { setupNotificationListeners } from './src/utils/notifications'
@@ -17,17 +22,35 @@ const Tab = createBottomTabNavigator()
 const AMBER = '#E07B2A'
 const MUTED = '#7B8FA6'
 
-export default function App() {
-  const [user, setUser]           = useState(undefined)
-  const [navRef, setNavRef]       = useState(null)
+const tabBarStyle = {
+  backgroundColor: '#0A1628',
+  borderTopColor: 'rgba(255,255,255,0.07)',
+}
 
-  // Auth state listener
+export default function App() {
+  const [user, setUser]         = useState(undefined)
+  const [userType, setUserType] = useState(null)
+  const [navRef, setNavRef]     = useState(null)
+
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, u => setUser(u ?? null))
+    const unsub = onAuthStateChanged(auth, async u => {
+      if (u) {
+        setUser(u)
+        // Detect user type from Firestore
+        const contractorSnap = await getDoc(doc(db, 'contractors', u.uid))
+        if (contractorSnap.exists()) {
+          setUserType('contractor')
+        } else {
+          setUserType('homeowner')
+        }
+      } else {
+        setUser(null)
+        setUserType(null)
+      }
+    })
     return unsub
   }, [])
 
-  // Notification tap listener — navigates to Alerts screen when user taps a push
   useEffect(() => {
     const cleanup = setupNotificationListeners((screen) => {
       if (navRef) navRef.navigate(screen)
@@ -35,8 +58,7 @@ export default function App() {
     return cleanup
   }, [navRef])
 
-  // Loading state
-  if (user === undefined) {
+  if (user === undefined || (user && !userType)) {
     return (
       <View style={{ flex: 1, backgroundColor: '#0F1F35', justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator color={AMBER} size="large" />
@@ -44,7 +66,6 @@ export default function App() {
     )
   }
 
-  // Not logged in
   if (!user) {
     return (
       <SafeAreaProvider>
@@ -53,7 +74,6 @@ export default function App() {
     )
   }
 
-  // Logged in
   return (
     <SafeAreaProvider>
       <OfflineBanner />
@@ -61,15 +81,26 @@ export default function App() {
         <Tab.Navigator
           screenOptions={{
             headerShown: false,
-            tabBarStyle: { backgroundColor: '#0A1628', borderTopColor: 'rgba(255,255,255,0.07)' },
+            tabBarStyle,
             tabBarActiveTintColor: AMBER,
             tabBarInactiveTintColor: MUTED,
           }}
         >
-          <Tab.Screen name="Home"    component={HomeScreen}    options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text> }} />
-          <Tab.Screen name="Search"  component={SearchScreen}  options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔍</Text> }} />
-          <Tab.Screen name="Alerts"  component={AlertsScreen}  options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚡</Text> }} />
-          <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👤</Text> }} />
+          {userType === 'contractor' ? (
+            <>
+              <Tab.Screen name="Leads"    component={ContractorDashboardScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📋</Text> }} />
+              <Tab.Screen name="Jobs"     component={ContractorJobsScreen}      options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔨</Text> }} />
+              <Tab.Screen name="Payouts"  component={ContractorPayoutsScreen}   options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💰</Text> }} />
+              <Tab.Screen name="Profile"  component={ContractorProfileScreen}   options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👤</Text> }} />
+            </>
+          ) : (
+            <>
+              <Tab.Screen name="Home"    component={HomeScreen}    options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text> }} />
+              <Tab.Screen name="Search"  component={SearchScreen}  options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔍</Text> }} />
+              <Tab.Screen name="Alerts"  component={AlertsScreen}  options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>⚡</Text> }} />
+              <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👤</Text> }} />
+            </>
+          )}
         </Tab.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
