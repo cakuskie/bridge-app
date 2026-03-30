@@ -5,24 +5,35 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { Text, ActivityIndicator, View } from 'react-native'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from './src/services/firebase'
-
 import HomeScreen from './src/screens/HomeScreen'
 import SearchScreen from './src/screens/SearchScreen'
 import AlertsScreen from './src/screens/AlertsScreen'
 import ProfileScreen from './src/screens/ProfileScreen'
 import LoginScreen from './src/screens/auth/LoginScreen'
+import OfflineBanner from './src/components/OfflineBanner'
+import { setupNotificationListeners } from './src/utils/notifications'
 
 const Tab = createBottomTabNavigator()
 const AMBER = '#E07B2A'
 const MUTED = '#7B8FA6'
 
 export default function App() {
-  const [user, setUser] = useState(undefined) // undefined = loading
+  const [user, setUser]           = useState(undefined)
+  const [navRef, setNavRef]       = useState(null)
 
+  // Auth state listener
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, u => setUser(u ?? null))
     return unsub
   }, [])
+
+  // Notification tap listener — navigates to Alerts screen when user taps a push
+  useEffect(() => {
+    const cleanup = setupNotificationListeners((screen) => {
+      if (navRef) navRef.navigate(screen)
+    })
+    return cleanup
+  }, [navRef])
 
   // Loading state
   if (user === undefined) {
@@ -45,7 +56,8 @@ export default function App() {
   // Logged in
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <OfflineBanner />
+      <NavigationContainer ref={ref => setNavRef(ref)}>
         <Tab.Navigator
           screenOptions={{
             headerShown: false,
