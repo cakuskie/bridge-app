@@ -14,7 +14,10 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.bridgetx.app",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.bridgetx.app",
@@ -49,7 +52,9 @@
           "androidMode": "default",
           "androidCollapsedTitle": "Bridge Storm Alert"
         }
-      ]
+      ],
+      "@sentry/react-native",
+      "@sentry/react-native"
     ]
   }
 }
