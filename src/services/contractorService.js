@@ -1,10 +1,37 @@
 import { collection, doc, getDoc, getDocs, query, where, orderBy, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from './firebase.js'
 
-export async function getVerifiedContractors() {
-  const q = query(collection(db, 'contractors'), where('status', '==', 'active'))
+export const ALL_SERVICES = [
+  'Storm Repair',
+  'Hail Damage',
+  'Full Replace',
+  'Gutters',
+  'Inspections',
+  'Windows',
+  'Siding',
+  'Insurance Claims',
+]
+
+export async function getVerifiedContractors(serviceFilter = null) {
+  let q
+  if (serviceFilter && serviceFilter !== 'All') {
+    q = query(
+      collection(db, 'contractors'),
+      where('status', '==', 'active'),
+      where('services', 'array-contains', serviceFilter)
+    )
+  } else {
+    q = query(collection(db, 'contractors'), where('status', '==', 'active'))
+  }
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function updateContractorServices(uid, services) {
+  await updateDoc(doc(db, 'contractors', uid), {
+    services,
+    updatedAt: serverTimestamp(),
+  })
 }
 
 export async function getContractorLeads(contractorId) {
