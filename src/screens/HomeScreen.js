@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, StyleSheet, Linking, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { getVerifiedContractors } from '../services/contractorService'
-import { fetchHeroCondition } from '../services/weather'
+import * as ImagePicker from 'expo-image-picker'
+import { doc, getDoc, updateDoc } from 'firebase/firestore'
+import { auth, db } from '../services/firebase'
 
 const NAVY   = '#0F1F35'
 const AMBER  = '#E07B2A'
@@ -10,92 +11,178 @@ const AMBER2 = '#F59E0B'
 const GREEN  = '#10B981'
 const MUTED  = '#7B8FA6'
 const WHITE  = '#FAFAFA'
-const BLUE   = '#3B82F6'
+const RED    = '#EF4444'
+
+const REPORT_LINKS = [
+  {
+    icon: '🚫',
+    title: 'Report a Storm Chaser',
+    body: 'Solicited after a storm? Report them in 60 seconds.',
+    url: 'https://bridgeverified.com/report',
+    color: 'rgba(239,68,68,0.1)',
+    border: 'rgba(239,68,68,0.3)',
+    textColor: '#FCA5A5',
+  },
+  {
+    icon: '🏅',
+    title: 'Get Your Anti-Chaser Decal',
+    body: 'Free physical decal shipped to your door. Tell chasers you\'re protected.',
+    url: 'https://bridgeverified.com/decal',
+    color: 'rgba(224,123,42,0.08)',
+    border: 'rgba(224,123,42,0.3)',
+    textColor: AMBER2,
+  },
+  {
+    icon: '📊',
+    title: 'Texas Storm Chaser Report',
+    body: 'See real data on predatory contractors across Texas.',
+    url: 'https://bridgeverified.com/report/texas',
+    color: 'rgba(59,130,246,0.08)',
+    border: 'rgba(59,130,246,0.3)',
+    textColor: '#93C5FD',
+  },
+]
 
 export default function HomeScreen() {
-  const [contractors, setContractors] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [weather, setWeather] = useState(null)
-  const [weatherLoading, setWeatherLoading] = useState(true)
+  const [profile, setProfile]       = useState(null)
+  const [photoUri, setPhotoUri]     = useState(null)
+  const [loading, setLoading]       = useState(true)
 
   useEffect(() => {
-    getVerifiedContractors()
-      .then(setContractors)
-      .finally(() => setLoading(false))
-
-    fetchHeroCondition()
-      .then(setWeather)
-      .finally(() => setWeatherLoading(false))
+    const uid = auth.currentUser?.uid
+    if (!uid) return
+    getDoc(doc(db, 'homeowners', uid)).then(snap => {
+      if (snap.exists()) {
+        const data = snap.data()
+        setProfile(data)
+        if (data.propertyPhoto) setPhotoUri(data.propertyPhoto)
+      }
+      setLoading(false)
+    })
   }, [])
 
-  const hasAlert = weather && weather.level !== 'clear'
+  const firstName = profile?.name?.split(' ')[0]
+    || auth.currentUser?.displayName?.split(' ')[0]
+    || 'there'
+
+  async function handlePickPhoto() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow photo access to add a property photo.')
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    })
+    if (!result.canceled && result.assets[0]) {
+      const uri = result.assets[0].uri
+      setPhotoUri(uri)
+      // Save to Firestore
+      const uid = auth.currentUser?.uid
+      if (uid) {
+        await updateDoc(doc(db, 'homeowners', uid), { propertyPhoto: uri })
+      }
+    }
+  }
+
+  async function handleTakePhoto() {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow camera access to take a property photo.')
+      return
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    })
+    if (!result.canceled && result.assets[0]) {
+      const uri = result.assets[0].uri
+      setPhotoUri(uri)
+      const uid = auth.currentUser?.uid
+      if (uid) {
+        await updateDoc(doc(db, 'homeowners', uid), { propertyPhoto: uri })
+      }
+    }
+  }
+
+  function handlePhotoPress() {
+    Alert.alert(
+      'Property Photo',
+      'Add a photo of your home',
+      [
+        { text: 'Take Photo', onPress: handleTakePhoto },
+        { text: 'Choose from Library', onPress: handlePickPhoto },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    )
+  }
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: NAVY, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color={AMBER} size="large" />
+      </View>
+    )
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: NAVY }}>
       <ScrollView contentContainerStyle={{ padding: 20 }}>
 
-        {/* Header */}
-        <Text style={s.muted}>Good morning,</Text>
-        <Text style={s.heading}>Bridge</Text>
+        {/* Greeting */}
+        <Text style={s.greeting}>Hello, {firstName} 👋</Text>
 
-        {/* Live Storm Alert Card */}
-        <View style={[s.alertCard, !hasAlert && s.alertCardClear]}>
-          {weatherLoading ? (
-            <ActivityIndicator color={AMBER} />
+        {/* Property photo box */}
+        <View style={s.photoBox}>
+          {photoUri ? (
+            <Image source={{ uri: photoUri }} style={s.photo} resizeMode="cover" />
           ) : (
-            <>
-              <View style={[s.alertBadge, !hasAlert && s.alertBadgeClear]}>
-                <Text style={[s.alertBadgeText, !hasAlert && s.alertBadgeTextClear]}>
-                  {hasAlert ? '⚡ ACTIVE ALERT' : '✅ ALL CLEAR'}
-                </Text>
-              </View>
-              <Text style={s.alertTitle}>
-                {hasAlert ? `${weather.label} — ${weather.location}` : 'No Active Alerts'}
-              </Text>
-              <Text style={s.alertBody}>
-                {hasAlert
-                  ? `${contractors.length} verified contractors available in your area.`
-                  : 'No active storm warnings across Texas right now.'}
-              </Text>
-              {hasAlert && (
-                <View style={s.alertBtns}>
-                  <TouchableOpacity style={s.btnPrimary}>
-                    <Text style={s.btnPrimaryText}>Find Contractor</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={s.btnGhost}>
-                    <Text style={s.btnGhostText}>View Map</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </>
+            <View style={s.photoPlaceholder}>
+              <Text style={{ fontSize: 48, marginBottom: 8 }}>🏠</Text>
+              <Text style={s.photoPlaceholderText}>Add a photo of your property</Text>
+            </View>
           )}
+          {/* Camera button overlay */}
+          <TouchableOpacity style={s.cameraBtn} onPress={handlePhotoPress}>
+            <Text style={{ fontSize: 18 }}>📷</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Contractors */}
-        <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Bridge Verified Pros</Text>
-          <Text style={s.sectionLink}>See All</Text>
-        </View>
+        {/* Address */}
+        {profile?.address && (
+          <Text style={s.address}>📍 {profile.address}</Text>
+        )}
 
-        {loading ? (
-          <ActivityIndicator color={AMBER} style={{ marginTop: 20 }} />
-        ) : contractors.length === 0 ? (
-          <Text style={s.muted}>No verified contractors yet — check back soon.</Text>
-        ) : contractors.map(c => (
-          <View key={c.id} style={s.contractorCard}>
-            <View style={s.contractorAvatar}>
-              <Text style={{ fontSize: 20 }}>🏠</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.contractorName}>{c.company || c.name}</Text>
-              <Text style={s.contractorSub}>{c.serviceArea ?? 'Texas'}</Text>
-              <View style={s.badges}>
-                <View style={s.badgeGreen}><Text style={s.badgeGreenText}>✓ Verified</Text></View>
-                <View style={s.badgeBlue}><Text style={s.badgeBlueText}>✓ BGC</Text></View>
-              </View>
-            </View>
-            <Text style={s.rating}>⭐ {c.rating ?? '5.0'}</Text>
+        {/* Protected banner */}
+        <View style={s.protectedBanner}>
+          <View style={s.shieldWrap}>
+            <Text style={{ fontSize: 28 }}>🛡️</Text>
           </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.protectedTitle}>This Property Is Protected By Bridge</Text>
+            <Text style={s.protectedSub}>Verified contractors only. Storm chasers, move along.</Text>
+          </View>
+        </View>
+
+        {/* Report links */}
+        <Text style={s.sectionTitle}>Homeowner Tools</Text>
+        {REPORT_LINKS.map(link => (
+          <TouchableOpacity
+            key={link.title}
+            style={[s.linkCard, { backgroundColor: link.color, borderColor: link.border }]}
+            onPress={() => Linking.openURL(link.url)}
+          >
+            <Text style={s.linkIcon}>{link.icon}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.linkTitle, { color: link.textColor }]}>{link.title}</Text>
+              <Text style={s.linkBody}>{link.body}</Text>
+            </View>
+            <Text style={{ color: MUTED, fontSize: 16 }}>›</Text>
+          </TouchableOpacity>
         ))}
 
       </ScrollView>
@@ -104,32 +191,20 @@ export default function HomeScreen() {
 }
 
 const s = StyleSheet.create({
-  heading:            { fontSize: 28, fontWeight: '700', color: WHITE, marginBottom: 20 },
-  muted:              { fontSize: 13, color: MUTED, marginBottom: 4 },
-  alertCard:          { backgroundColor: 'rgba(224,123,42,0.12)', borderWidth: 1, borderColor: 'rgba(224,123,42,0.4)', borderRadius: 16, padding: 16, marginBottom: 24 },
-  alertCardClear:     { backgroundColor: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.25)' },
-  alertBadge:         { backgroundColor: 'rgba(224,123,42,0.2)', borderWidth: 1, borderColor: 'rgba(224,123,42,0.5)', borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3, alignSelf: 'flex-start', marginBottom: 8 },
-  alertBadgeClear:    { backgroundColor: 'rgba(16,185,129,0.15)', borderColor: 'rgba(16,185,129,0.4)' },
-  alertBadgeText:     { fontSize: 10, fontWeight: '800', color: AMBER2 },
-  alertBadgeTextClear:{ color: GREEN },
-  alertTitle:         { fontSize: 15, fontWeight: '700', color: WHITE, marginBottom: 6 },
-  alertBody:          { fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 20, marginBottom: 12 },
-  alertBtns:          { flexDirection: 'row', gap: 8 },
-  btnPrimary:         { flex: 1, backgroundColor: AMBER, borderRadius: 10, padding: 12, alignItems: 'center' },
-  btnPrimaryText:     { color: WHITE, fontWeight: '800', fontSize: 13 },
-  btnGhost:           { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: 12, paddingHorizontal: 16, alignItems: 'center' },
-  btnGhostText:       { color: 'rgba(255,255,255,0.65)', fontWeight: '600', fontSize: 13 },
-  sectionHeader:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitle:       { fontSize: 14, fontWeight: '700', color: WHITE },
-  sectionLink:        { fontSize: 12, color: BLUE },
-  contractorCard:     { backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 10 },
-  contractorAvatar:   { width: 40, height: 40, borderRadius: 10, backgroundColor: 'rgba(59,130,246,0.2)', alignItems: 'center', justifyContent: 'center' },
-  contractorName:     { fontSize: 14, fontWeight: '700', color: WHITE },
-  contractorSub:      { fontSize: 11, color: MUTED, marginTop: 2 },
-  badges:             { flexDirection: 'row', gap: 6, marginTop: 6 },
-  badgeGreen:         { backgroundColor: 'rgba(16,185,129,0.15)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', borderRadius: 100, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeGreenText:     { fontSize: 9, fontWeight: '800', color: GREEN },
-  badgeBlue:          { backgroundColor: 'rgba(59,130,246,0.15)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', borderRadius: 100, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeBlueText:      { fontSize: 9, fontWeight: '800', color: '#93C5FD' },
-  rating:             { fontSize: 12, color: AMBER2 },
+  greeting:            { fontSize: 26, fontWeight: '700', color: WHITE, marginBottom: 20 },
+  photoBox:            { width: '100%', height: 200, borderRadius: 18, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', marginBottom: 10, position: 'relative' },
+  photo:               { width: '100%', height: '100%' },
+  photoPlaceholder:    { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  photoPlaceholderText:{ fontSize: 13, color: MUTED, marginTop: 4 },
+  cameraBtn:           { position: 'absolute', bottom: 12, left: 12, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 100, width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  address:             { fontSize: 13, color: MUTED, marginBottom: 16 },
+  protectedBanner:     { backgroundColor: 'rgba(16,185,129,0.08)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 28 },
+  shieldWrap:          { width: 52, height: 52, borderRadius: 14, backgroundColor: 'rgba(16,185,129,0.15)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  protectedTitle:      { fontSize: 15, fontWeight: '700', color: WHITE, marginBottom: 4 },
+  protectedSub:        { fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 18 },
+  sectionTitle:        { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
+  linkCard:            { borderWidth: 1, borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 },
+  linkIcon:            { fontSize: 24, flexShrink: 0 },
+  linkTitle:           { fontSize: 14, fontWeight: '700', marginBottom: 3 },
+  linkBody:            { fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 18 },
 })
