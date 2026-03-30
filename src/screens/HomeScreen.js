@@ -11,17 +11,16 @@ const AMBER2 = '#F59E0B'
 const GREEN  = '#10B981'
 const MUTED  = '#7B8FA6'
 const WHITE  = '#FAFAFA'
-const RED    = '#EF4444'
 
-const REPORT_LINKS = [
+const HOMEOWNER_LINKS = [
   {
     icon: '🚫',
     title: 'Report a Storm Chaser',
-    body: 'Solicited after a storm? Report them in 60 seconds.',
-    url: 'https://bridgeverified.com/report',
-    color: 'rgba(239,68,68,0.1)',
+    body: 'Solicited after a storm? Report them through an official channel.',
+    color: 'rgba(239,68,68,0.08)',
     border: 'rgba(239,68,68,0.3)',
     textColor: '#FCA5A5',
+    isReport: true,
   },
   {
     icon: '🏅',
@@ -34,7 +33,7 @@ const REPORT_LINKS = [
   },
   {
     icon: '📊',
-    title: 'Texas Storm Chaser Report',
+    title: 'Texas Storm Chaser Impact Report',
     body: 'See real data on predatory contractors across Texas.',
     url: 'https://bridgeverified.com/report/texas',
     color: 'rgba(59,130,246,0.08)',
@@ -43,10 +42,32 @@ const REPORT_LINKS = [
   },
 ]
 
+function handleReportPress() {
+  Alert.alert(
+    'Report a Storm Chaser',
+    'Choose where to file your report:',
+    [
+      {
+        text: '🏛️ Texas Dept. of Insurance',
+        onPress: () => Linking.openURL('https://www.tdi.texas.gov/consumer/complaintprocess.html'),
+      },
+      {
+        text: '⚖️ Texas Attorney General',
+        onPress: () => Linking.openURL('https://www.texasattorneygeneral.gov/consumer-protection/file-consumer-complaint'),
+      },
+      {
+        text: '🔍 BBB Scam Tracker',
+        onPress: () => Linking.openURL('https://www.bbb.org/scamtracker'),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]
+  )
+}
+
 export default function HomeScreen() {
-  const [profile, setProfile]       = useState(null)
-  const [photoUri, setPhotoUri]     = useState(null)
-  const [loading, setLoading]       = useState(true)
+  const [profile, setProfile]   = useState(null)
+  const [photoUri, setPhotoUri] = useState(null)
+  const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
     const uid = auth.currentUser?.uid
@@ -80,11 +101,8 @@ export default function HomeScreen() {
     if (!result.canceled && result.assets[0]) {
       const uri = result.assets[0].uri
       setPhotoUri(uri)
-      // Save to Firestore
       const uid = auth.currentUser?.uid
-      if (uid) {
-        await updateDoc(doc(db, 'homeowners', uid), { propertyPhoto: uri })
-      }
+      if (uid) await updateDoc(doc(db, 'homeowners', uid), { propertyPhoto: uri })
     }
   }
 
@@ -103,9 +121,7 @@ export default function HomeScreen() {
       const uri = result.assets[0].uri
       setPhotoUri(uri)
       const uid = auth.currentUser?.uid
-      if (uid) {
-        await updateDoc(doc(db, 'homeowners', uid), { propertyPhoto: uri })
-      }
+      if (uid) await updateDoc(doc(db, 'homeowners', uid), { propertyPhoto: uri })
     }
   }
 
@@ -133,7 +149,6 @@ export default function HomeScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: NAVY }}>
       <ScrollView contentContainerStyle={{ padding: 20 }}>
 
-        {/* Greeting */}
         <Text style={s.greeting}>Hello, {firstName} 👋</Text>
 
         {/* Property photo box */}
@@ -146,13 +161,11 @@ export default function HomeScreen() {
               <Text style={s.photoPlaceholderText}>Add a photo of your property</Text>
             </View>
           )}
-          {/* Camera button overlay */}
           <TouchableOpacity style={s.cameraBtn} onPress={handlePhotoPress}>
             <Text style={{ fontSize: 18 }}>📷</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Address */}
         {profile?.address && (
           <Text style={s.address}>📍 {profile.address}</Text>
         )}
@@ -168,13 +181,13 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Report links */}
+        {/* Homeowner tools */}
         <Text style={s.sectionTitle}>Homeowner Tools</Text>
-        {REPORT_LINKS.map(link => (
+        {HOMEOWNER_LINKS.map(link => (
           <TouchableOpacity
             key={link.title}
             style={[s.linkCard, { backgroundColor: link.color, borderColor: link.border }]}
-            onPress={() => Linking.openURL(link.url)}
+            onPress={() => link.isReport ? handleReportPress() : Linking.openURL(link.url)}
           >
             <Text style={s.linkIcon}>{link.icon}</Text>
             <View style={{ flex: 1 }}>
@@ -191,20 +204,20 @@ export default function HomeScreen() {
 }
 
 const s = StyleSheet.create({
-  greeting:            { fontSize: 26, fontWeight: '700', color: WHITE, marginBottom: 20 },
-  photoBox:            { width: '100%', height: 200, borderRadius: 18, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', marginBottom: 10, position: 'relative' },
-  photo:               { width: '100%', height: '100%' },
-  photoPlaceholder:    { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  photoPlaceholderText:{ fontSize: 13, color: MUTED, marginTop: 4 },
-  cameraBtn:           { position: 'absolute', bottom: 12, left: 12, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 100, width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
-  address:             { fontSize: 13, color: MUTED, marginBottom: 16 },
-  protectedBanner:     { backgroundColor: 'rgba(16,185,129,0.08)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 28 },
-  shieldWrap:          { width: 52, height: 52, borderRadius: 14, backgroundColor: 'rgba(16,185,129,0.15)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  protectedTitle:      { fontSize: 15, fontWeight: '700', color: WHITE, marginBottom: 4 },
-  protectedSub:        { fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 18 },
-  sectionTitle:        { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
-  linkCard:            { borderWidth: 1, borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 },
-  linkIcon:            { fontSize: 24, flexShrink: 0 },
-  linkTitle:           { fontSize: 14, fontWeight: '700', marginBottom: 3 },
-  linkBody:            { fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 18 },
+  greeting:             { fontSize: 26, fontWeight: '700', color: WHITE, marginBottom: 20 },
+  photoBox:             { width: '100%', height: 200, borderRadius: 18, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', marginBottom: 10, position: 'relative' },
+  photo:                { width: '100%', height: '100%' },
+  photoPlaceholder:     { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  photoPlaceholderText: { fontSize: 13, color: MUTED, marginTop: 4 },
+  cameraBtn:            { position: 'absolute', bottom: 12, left: 12, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 100, width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  address:              { fontSize: 13, color: MUTED, marginBottom: 16 },
+  protectedBanner:      { backgroundColor: 'rgba(16,185,129,0.08)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 28 },
+  shieldWrap:           { width: 52, height: 52, borderRadius: 14, backgroundColor: 'rgba(16,185,129,0.15)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  protectedTitle:       { fontSize: 15, fontWeight: '700', color: WHITE, marginBottom: 4 },
+  protectedSub:         { fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 18 },
+  sectionTitle:         { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
+  linkCard:             { borderWidth: 1, borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 },
+  linkIcon:             { fontSize: 24, flexShrink: 0 },
+  linkTitle:            { fontSize: 14, fontWeight: '700', marginBottom: 3 },
+  linkBody:             { fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 18 },
 })
