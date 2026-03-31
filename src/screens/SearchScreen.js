@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { getVerifiedContractors, submitLeadRequest } from '../services/contractorService'
 
 const NAVY   = '#0F1F35'
@@ -23,9 +24,7 @@ export default function SearchScreen() {
 
   useEffect(() => {
     setLoading(true)
-    getVerifiedContractors(filter)
-      .then(setContractors)
-      .finally(() => setLoading(false))
+    getVerifiedContractors(filter).then(setContractors).finally(() => setLoading(false))
   }, [filter])
 
   async function handleRequest() {
@@ -37,16 +36,11 @@ export default function SearchScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: NAVY }}>
       <ScrollView contentContainerStyle={{ padding: 20 }}>
-
         <Text style={s.heading}>Find a Contractor</Text>
-
-        {/* Search bar */}
         <View style={s.searchBar}>
-          <Text style={{ fontSize: 16 }}>🔍</Text>
+          <Ionicons name="search" size={16} color="rgba(255,255,255,0.3)" />
           <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', marginLeft: 8 }}>Roofing, gutters, windows…</Text>
         </View>
-
-        {/* Filter chips */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {FILTERS.map(f => (
@@ -56,32 +50,30 @@ export default function SearchScreen() {
             ))}
           </View>
         </ScrollView>
-
         {loading ? (
           <ActivityIndicator color={AMBER} style={{ marginTop: 20 }} />
         ) : (
           <>
-            <Text style={s.countLabel}>
-              {contractors.length} VERIFIED PRO{contractors.length !== 1 ? 'S' : ''}{filter !== 'All' ? ` FOR ${filter.toUpperCase()}` : ' NEAR YOU'}
-            </Text>
-
+            <Text style={s.countLabel}>{contractors.length} VERIFIED PRO{contractors.length !== 1 ? 'S' : ''}{filter !== 'All' ? ` FOR ${filter.toUpperCase()}` : ' NEAR YOU'}</Text>
             {contractors.length === 0 ? (
               <View style={s.emptyCard}>
-                <Text style={{ fontSize: 32, marginBottom: 12 }}>🔍</Text>
+                <Ionicons name="search-outline" size={40} color={MUTED} style={{ marginBottom: 12 }} />
                 <Text style={s.emptyTitle}>No contractors for this service yet</Text>
                 <Text style={s.emptyBody}>Check back soon — we're growing our verified network.</Text>
               </View>
             ) : contractors.map(c => (
               <TouchableOpacity key={c.id} onPress={() => { setSelected(c); setRequestSent(false) }} style={[s.card, selected?.id === c.id && s.cardSelected]}>
                 <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
-                  <View style={s.avatar}><Text style={{ fontSize: 20 }}>🏠</Text></View>
+                  <View style={s.avatar}><Ionicons name="home" size={20} color={BLUE} /></View>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                       <Text style={s.name}>{c.company || c.name}</Text>
-                      <Text style={s.rating}>⭐ {c.rating ?? '5.0'}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <Ionicons name="star" size={11} color={AMBER2} />
+                        <Text style={s.rating}>{c.rating ?? '5.0'}</Text>
+                      </View>
                     </View>
                     <Text style={s.sub}>{c.serviceArea ?? 'Texas'}</Text>
-                    {/* Show contractor's services as mini tags */}
                     {c.services && c.services.length > 0 && (
                       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
                         <View style={{ flexDirection: 'row', gap: 5 }}>
@@ -94,8 +86,8 @@ export default function SearchScreen() {
                       </ScrollView>
                     )}
                     <View style={s.badges}>
-                      <View style={s.badgeGreen}><Text style={s.badgeGreenText}>✓ Bridge Verified</Text></View>
-                      <View style={s.badgeBlue}><Text style={s.badgeBlueText}>✓ BGC</Text></View>
+                      <View style={s.badgeGreen}><Text style={s.badgeGreenText}>Bridge Verified</Text></View>
+                      <View style={s.badgeBlue}><Text style={s.badgeBlueText}>BGC</Text></View>
                     </View>
                     <TouchableOpacity style={[s.btnPrimary, { marginTop: 10 }]} onPress={() => { setSelected(c); setRequestSent(false) }}>
                       <Text style={s.btnPrimaryText}>Request Quote</Text>
@@ -106,12 +98,9 @@ export default function SearchScreen() {
             ))}
           </>
         )}
-
-        {/* Quote form */}
         {selected && !requestSent && (
           <View style={s.formCard}>
             <Text style={s.formTitle}>Request a Quote — {selected.company || selected.name}</Text>
-
             <Text style={s.label}>SERVICE TYPE</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
               {['Storm Repair', 'Hail Damage', 'Inspection', 'Full Replace'].map(t => (
@@ -120,40 +109,22 @@ export default function SearchScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-
             <Text style={s.label}>PROPERTY ADDRESS</Text>
-            <TextInput
-              value={form.address}
-              onChangeText={v => setForm(f => ({ ...f, address: v }))}
-              placeholder="Your property address"
-              placeholderTextColor="rgba(255,255,255,0.3)"
-              style={s.input}
-            />
-
+            <TextInput value={form.address} onChangeText={v => setForm(f => ({ ...f, address: v }))} placeholder="Your property address" placeholderTextColor="rgba(255,255,255,0.3)" style={s.input} />
             <Text style={s.label}>DESCRIBE THE DAMAGE</Text>
-            <TextInput
-              value={form.description}
-              onChangeText={v => setForm(f => ({ ...f, description: v }))}
-              placeholder="Describe what you're seeing…"
-              placeholderTextColor="rgba(255,255,255,0.3)"
-              multiline
-              style={[s.input, { height: 80 }]}
-            />
-
+            <TextInput value={form.description} onChangeText={v => setForm(f => ({ ...f, description: v }))} placeholder="Describe what you're seeing…" placeholderTextColor="rgba(255,255,255,0.3)" multiline style={[s.input, { height: 80 }]} />
             <TouchableOpacity style={s.submitBtn} onPress={handleRequest}>
-              <Text style={s.submitBtnText}>Send Request →</Text>
+              <Text style={s.submitBtnText}>Send Request</Text>
             </TouchableOpacity>
           </View>
         )}
-
         {requestSent && (
           <View style={s.confirmCard}>
-            <Text style={{ fontSize: 32, marginBottom: 10 }}>✅</Text>
+            <Ionicons name="checkmark-circle" size={48} color={GREEN} style={{ marginBottom: 10 }} />
             <Text style={s.confirmTitle}>Request Sent!</Text>
             <Text style={s.confirmSub}>{selected.company || selected.name} will be in touch shortly.</Text>
           </View>
         )}
-
       </ScrollView>
     </SafeAreaView>
   )

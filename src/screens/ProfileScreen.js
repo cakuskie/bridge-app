@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { auth, getUserProfile } from '../services/firebase'
 
@@ -13,7 +14,7 @@ const WHITE  = '#FAFAFA'
 const BLUE   = '#3B82F6'
 
 export default function ProfileScreen() {
-  const [user, setUser] = useState(null)
+  const [user, setUser]       = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -29,9 +30,7 @@ export default function ProfileScreen() {
     return unsub
   }, [])
 
-  async function handleSignOut() {
-    await signOut(auth)
-  }
+  async function handleSignOut() { await signOut(auth) }
 
   if (loading) {
     return (
@@ -42,35 +41,28 @@ export default function ProfileScreen() {
   }
 
   const isContractor = profile?._collection === 'contractors'
+  const quickLinks = [
+    { icon: 'document-text', label: 'Insurance Wizard' },
+    { icon: 'ban', label: 'Anti-Chaser Decal' },
+    { icon: 'notifications', label: 'Alert Settings' },
+    { icon: 'lock-closed', label: 'Privacy & Security' },
+  ]
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: NAVY }}>
       <ScrollView contentContainerStyle={{ padding: 20 }}>
-
         <Text style={s.heading}>Profile</Text>
-
-        {/* Avatar card */}
         <View style={s.verifiedCard}>
           <View style={s.avatarWrap}>
-            <Text style={{ fontSize: 32 }}>{isContractor ? '🔨' : '🏠'}</Text>
+            <Ionicons name={isContractor ? 'hammer' : 'home'} size={32} color={BLUE} />
           </View>
           <Text style={s.name}>{profile?.name ?? user?.displayName ?? 'Bridge User'}</Text>
           <Text style={s.sub}>{isContractor ? 'Contractor' : 'Homeowner'} · {profile?.serviceArea ?? profile?.zip ?? 'Texas'}</Text>
           <View style={s.badges}>
-            <View style={s.badgeGreen}>
-              <Text style={s.badgeGreenText}>
-                {profile?.status === 'active' ? '✅ Active' : '⏳ Pending Verification'}
-              </Text>
-            </View>
-            {!isContractor && (
-              <View style={s.badgeAmber}>
-                <Text style={s.badgeAmberText}>🚫 Decal Available</Text>
-              </View>
-            )}
+            <View style={s.badgeGreen}><Text style={s.badgeGreenText}>{profile?.status === 'active' ? 'Active' : 'Pending'}</Text></View>
+            {!isContractor && <View style={s.badgeAmber}><Text style={s.badgeAmberText}>Decal Available</Text></View>}
           </View>
         </View>
-
-        {/* Profile rows */}
         <View style={s.card}>
           {[
             { label: 'Name',         value: profile?.name },
@@ -87,30 +79,20 @@ export default function ProfileScreen() {
             </View>
           ))}
         </View>
-
-        {/* Quick links */}
         <View style={s.card}>
-          {[
-            { icon: '📋', label: 'Insurance Wizard' },
-            { icon: '🚫', label: 'Anti-Chaser Decal' },
-            { icon: '⚡', label: 'Alert Settings' },
-            { icon: '🔒', label: 'Privacy & Security' },
-          ].map((item, i, arr) => (
+          {quickLinks.map((item, i, arr) => (
             <TouchableOpacity key={item.label} style={[s.row, i === arr.length - 1 && { borderBottomWidth: 0 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Text style={{ fontSize: 18 }}>{item.icon}</Text>
+                <Ionicons name={item.icon} size={18} color={AMBER2} />
                 <Text style={s.linkLabel}>{item.label}</Text>
               </View>
-              <Text style={{ color: MUTED, fontSize: 16 }}>›</Text>
+              <Ionicons name="chevron-forward" size={16} color={MUTED} />
             </TouchableOpacity>
           ))}
         </View>
-
-        {/* Sign out */}
         <TouchableOpacity style={s.signOutBtn} onPress={handleSignOut}>
           <Text style={s.signOutText}>Sign Out</Text>
         </TouchableOpacity>
-
       </ScrollView>
     </SafeAreaView>
   )
