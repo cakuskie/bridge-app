@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore'
 import { db, auth } from '../services/firebase'
+import { Ionicons } from '@expo/vector-icons'
 
 const NAVY=  '#0F1F35'
 const AMBER= '#E07B2A'

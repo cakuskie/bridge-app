@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { auth, db } from '../services/firebase'
 import { signOut } from 'firebase/auth'
+import { Ionicons } from '@expo/vector-icons'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { ALL_SERVICES, updateContractorServices } from '../services/contractorService'
 

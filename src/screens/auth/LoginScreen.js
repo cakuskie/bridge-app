@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet,
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { Polygon, Text as SvgText } from 'react-native-svg'
 import { loginUser, registerUser } from '../../services/firebase'
+import { Ionicons } from '@expo/vector-icons'
 
 const NAVY  = '#0F1F35'
 const AMBER = '#E07B2A'
