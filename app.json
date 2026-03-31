@@ -54,8 +54,7 @@
         }
       ],
       "@sentry/react-native",
-      "@sentry/react-native",
-      "expo-font"
+      "@sentry/react-native"
     ]
   }
 }
