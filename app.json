@@ -4,7 +4,7 @@
     "slug": "bridge-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Bridgeicon.png",
     "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -17,7 +17,8 @@
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "icon": "./assets/Bridgeicon.png"
     },
     "android": {
       "package": "com.bridgetx.app",
@@ -47,7 +48,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
+          "icon": "./assets/Bridgeicon.png",
           "color": "#E07B2A",
           "androidMode": "default",
           "androidCollapsedTitle": "Bridge Storm Alert"
