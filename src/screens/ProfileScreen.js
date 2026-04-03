@@ -101,22 +101,22 @@ export default function ProfileScreen({ navigation }) {
     {
       icon: 'document-text',
       label: 'Insurance Wizard',
-      onPress: () => navigation.navigate('InsuranceWizard'),
+      onPress: () => Alert.alert('Insurance Wizard', 'The Insurance Wizard helps you understand your coverage. This feature is opening soon.'),
     },
     {
       icon: 'ban',
       label: 'Anti-Chaser Decal',
-      onPress: () => navigation.navigate('AntiChaser'),
+      onPress: () => Alert.alert('Anti-Chaser Decal', 'Request your free Bridge decal at bridgeverified.com/decal'),
     },
     {
       icon: 'notifications',
       label: 'Alert Settings',
-      onPress: () => navigation.navigate('AlertSettings'),
+      onPress: () => Alert.alert('Alert Settings', 'Storm alert preferences can be managed in your device notification settings.'),
     },
     {
       icon: 'lock-closed',
       label: 'Privacy & Security',
-      onPress: () => navigation.navigate('PrivacySecurity'),
+      onPress: () => Alert.alert('Privacy & Security', 'View our privacy policy at bridgeverified.com/privacy'),
     },
   ]
 
