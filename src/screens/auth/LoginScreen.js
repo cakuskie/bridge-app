@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { Polygon, Text as SvgText } from 'react-native-svg'
 import { loginUser, registerUser } from '../../services/firebase'
-import { Ionicons } from '@expo/vector-icons'
 
 const NAVY  = '#0F1F35'
 const AMBER = '#E07B2A'
@@ -38,11 +37,10 @@ function BridgeLogo() {
 }
 
 export default function LoginScreen() {
-  const [mode, setMode] = useState('login')
-  const [type, setType] = useState('homeowner')
-  const [form, setForm] = useState({ name: '', email: '', password: '', company: '', phone: '', address: '', zip: '', serviceArea: '', ein: '' })
+  const [mode, setMode]     = useState('login')
+  const [form, setForm]     = useState({ name: '', email: '', password: '', phone: '', address: '', zip: '' })
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError]   = useState('')
 
   function update(field, value) {
     setForm(f => ({ ...f, [field]: value }))
@@ -55,7 +53,7 @@ export default function LoginScreen() {
       if (mode === 'login') {
         await loginUser(form.email, form.password)
       } else {
-        await registerUser(type, form)
+        await registerUser('homeowner', form)
       }
     } catch (e) {
       setError(e.message.replace('Firebase: ', '').replace(/\(auth.*\)/, '').trim())
@@ -82,37 +80,17 @@ export default function LoginScreen() {
           </View>
 
           {mode === 'signup' && (
-            <View style={s.toggle}>
-              <TouchableOpacity style={[s.tBtn, type === 'homeowner' && s.tBtnOn]} onPress={() => setType('homeowner')}>
-                <Text style={[s.tBtnText, type === 'homeowner' && s.tBtnTextOn]}>🏠 Homeowner</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[s.tBtn, type === 'contractor' && s.tBtnOn]} onPress={() => setType('contractor')}>
-                <Text style={[s.tBtnText, type === 'contractor' && s.tBtnTextOn]}>🔨 Contractor</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {mode === 'signup' && (
             <TextInput style={s.input} placeholder="Full Name" placeholderTextColor={MUTED} value={form.name} onChangeText={v => update('name', v)} />
           )}
-          {mode === 'signup' && type === 'contractor' && (
-            <TextInput style={s.input} placeholder="Company Name" placeholderTextColor={MUTED} value={form.company} onChangeText={v => update('company', v)} />
-          )}
+
           <TextInput style={s.input} placeholder="Email" placeholderTextColor={MUTED} value={form.email} onChangeText={v => update('email', v)} autoCapitalize="none" keyboardType="email-address" />
           <TextInput style={s.input} placeholder="Password" placeholderTextColor={MUTED} value={form.password} onChangeText={v => update('password', v)} secureTextEntry />
+
           {mode === 'signup' && (
-            <TextInput style={s.input} placeholder="Phone" placeholderTextColor={MUTED} value={form.phone} onChangeText={v => update('phone', v)} keyboardType="phone-pad" />
-          )}
-          {mode === 'signup' && type === 'homeowner' && (
             <>
+              <TextInput style={s.input} placeholder="Phone" placeholderTextColor={MUTED} value={form.phone} onChangeText={v => update('phone', v)} keyboardType="phone-pad" />
               <TextInput style={s.input} placeholder="Property Address" placeholderTextColor={MUTED} value={form.address} onChangeText={v => update('address', v)} />
               <TextInput style={s.input} placeholder="ZIP Code" placeholderTextColor={MUTED} value={form.zip} onChangeText={v => update('zip', v)} keyboardType="numeric" />
-            </>
-          )}
-          {mode === 'signup' && type === 'contractor' && (
-            <>
-              <TextInput style={s.input} placeholder="Service Area (e.g. San Antonio, TX)" placeholderTextColor={MUTED} value={form.serviceArea} onChangeText={v => update('serviceArea', v)} />
-              <TextInput style={s.input} placeholder="EIN or SSN (for 1099 reporting)" placeholderTextColor={MUTED} value={form.ein} onChangeText={v => update('ein', v)} keyboardType="numeric" />
             </>
           )}
 
@@ -125,9 +103,15 @@ export default function LoginScreen() {
             }
           </TouchableOpacity>
 
-          {mode === 'signup' && type === 'contractor' && (
-            <Text style={s.note}>Your EIN/SSN is stored securely and never displayed publicly. Required for IRS 1099 reporting.</Text>
-          )}
+          <View style={s.divider}>
+            <View style={s.divLine} />
+            <Text style={s.divText}>Are you a contractor?</Text>
+            <View style={s.divLine} />
+          </View>
+
+          <TouchableOpacity style={s.contractorBtn} onPress={() => Linking.openURL('https://bridgeverified.com')}>
+            <Text style={s.contractorText}>Join as a Contractor →</Text>
+          </TouchableOpacity>
 
         </ScrollView>
       </KeyboardAvoidingView>
@@ -136,16 +120,20 @@ export default function LoginScreen() {
 }
 
 const s = StyleSheet.create({
-  wrap:       { flexGrow: 1, padding: 28, justifyContent: 'center' },
-  tagline:    { fontSize: 13, color: MUTED, textAlign: 'center', marginBottom: 32 },
-  toggle:     { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 4, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-  tBtn:       { flex: 1, padding: 10, borderRadius: 9, alignItems: 'center' },
-  tBtnOn:     { backgroundColor: AMBER },
-  tBtnText:   { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },
-  tBtnTextOn: { color: WHITE },
-  input:      { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 14, fontSize: 14, color: WHITE, marginBottom: 12 },
-  error:      { fontSize: 13, color: '#FCA5A5', marginBottom: 12, textAlign: 'center' },
-  submitBtn:  { backgroundColor: AMBER, borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 4 },
-  submitText: { color: WHITE, fontWeight: '800', fontSize: 15 },
-  note:       { fontSize: 11, color: MUTED, textAlign: 'center', marginTop: 16, lineHeight: 16 },
+  wrap:          { flexGrow: 1, padding: 28, justifyContent: 'center' },
+  tagline:       { fontSize: 13, color: MUTED, textAlign: 'center', marginBottom: 32 },
+  toggle:        { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 4, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  tBtn:          { flex: 1, padding: 10, borderRadius: 9, alignItems: 'center' },
+  tBtnOn:        { backgroundColor: AMBER },
+  tBtnText:      { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },
+  tBtnTextOn:    { color: WHITE },
+  input:         { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 14, fontSize: 14, color: WHITE, marginBottom: 12 },
+  error:         { fontSize: 13, color: '#FCA5A5', marginBottom: 12, textAlign: 'center' },
+  submitBtn:     { backgroundColor: AMBER, borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 4 },
+  submitText:    { color: WHITE, fontWeight: '800', fontSize: 15 },
+  divider:       { flexDirection: 'row', alignItems: 'center', marginVertical: 24, gap: 10 },
+  divLine:       { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' },
+  divText:       { fontSize: 12, color: MUTED },
+  contractorBtn: { borderWidth: 1, borderColor: 'rgba(224,123,42,0.4)', borderRadius: 14, padding: 16, alignItems: 'center' },
+  contractorText:{ color: AMBER, fontWeight: '700', fontSize: 14 },
 })

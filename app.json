@@ -14,9 +14,11 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.bridgetx.app",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Bridge uses your camera to photograph roof or storm damage so contractors can provide accurate repair estimates.",
+        "NSPhotoLibraryUsageDescription": "Bridge accesses your photo library so you can upload images of roof or storm damage for contractor estimates."
       },
       "icon": "./assets/Bridgeicon.png"
     },
