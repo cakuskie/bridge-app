@@ -181,7 +181,7 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         {/* Sign out */}
-        <TouchableOpacity style={s.signOutBtn} onPress={handleSignOut}>
+        <TouchableOpacity style={s.signOutBtn} onPress={handleSignOut} activeOpacity={0.7}>
           <Text style={s.signOutText}>Sign Out</Text>
         </TouchableOpacity>
 
@@ -190,6 +190,7 @@ export default function ProfileScreen({ navigation }) {
           style={s.deleteBtn}
           onPress={handleDeleteAccount}
           disabled={deleting}
+          activeOpacity={0.7}
         >
           {deleting
             ? <ActivityIndicator color={RED} size="small" />
