@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db, auth } from '../services/firebase'
 
 const NAVY=  '#0F1F35'
@@ -26,6 +26,41 @@ export default function ContractorDashboardScreen() {
     })
     return unsub
   }, [])
+
+  async function handleAccept(leadId) {
+    try {
+      await updateDoc(doc(db, 'leads', leadId), {
+        status: 'quoted',
+        updatedAt: serverTimestamp()
+      })
+    } catch (e) {
+      Alert.alert('Error', 'Could not accept lead. Please try again.')
+    }
+  }
+
+  async function handleDecline(leadId) {
+    Alert.alert(
+      'Decline Lead',
+      'Are you sure you want to decline this lead?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Decline',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await updateDoc(doc(db, 'leads', leadId), {
+                status: 'declined',
+                updatedAt: serverTimestamp()
+              })
+            } catch (e) {
+              Alert.alert('Error', 'Could not decline lead. Please try again.')
+            }
+          }
+        }
+      ]
+    )
+  }
 
   const activeLeads = leads.filter(l => l.status === 'new')
   const completed   = leads.filter(l => l.status === 'complete')
@@ -93,8 +128,20 @@ export default function ContractorDashboardScreen() {
               <Text style={s.leadService}>{lead.serviceType || 'Storm repair'} · EagleView report available</Text>
               {lead.status === 'new' && (
                 <View style={s.leadBtns}>
-                  <TouchableOpacity style={s.btnAccept}><Text style={s.btnAcceptText}>Accept Lead</Text></TouchableOpacity>
-                  <TouchableOpacity style={s.btnDecline}><Text style={s.btnDeclineText}>Decline</Text></TouchableOpacity>
+                  <TouchableOpacity
+                    style={s.btnAccept}
+                    activeOpacity={0.8}
+                    onPress={() => handleAccept(lead.id)}
+                  >
+                    <Text style={s.btnAcceptText}>Accept Lead</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={s.btnDecline}
+                    activeOpacity={0.8}
+                    onPress={() => handleDecline(lead.id)}
+                  >
+                    <Text style={s.btnDeclineText}>Decline</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>

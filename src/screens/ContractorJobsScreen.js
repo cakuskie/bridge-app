@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db, auth } from '../services/firebase'
 
 const NAVY=  '#0F1F35'
@@ -28,6 +28,30 @@ export default function ContractorJobsScreen() {
     return unsub
   }, [])
 
+  async function handleMarkComplete(jobId) {
+    Alert.alert(
+      'Mark as Complete',
+      'Confirm this job is finished and ready for homeowner review?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark Complete',
+          onPress: async () => {
+            try {
+              await updateDoc(doc(db, 'leads', jobId), {
+                status: 'complete',
+                completedAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+              })
+            } catch (e) {
+              Alert.alert('Error', 'Could not update job status. Please try again.')
+            }
+          }
+        }
+      ]
+    )
+  }
+
   const filters  = ['all', 'in_progress', 'complete']
   const filtered = filter === 'all' ? jobs : jobs.filter(j => j.status === filter)
 
@@ -43,7 +67,7 @@ export default function ContractorJobsScreen() {
       <View style={s.header}><Text style={s.heading}>Job Management</Text></View>
       <View style={s.chips}>
         {filters.map(f => (
-          <TouchableOpacity key={f} style={[s.chip, filter === f && s.chipOn]} onPress={() => setFilter(f)}>
+          <TouchableOpacity key={f} style={[s.chip, filter === f && s.chipOn]} onPress={() => setFilter(f)} activeOpacity={0.8}>
             <Text style={[s.chipText, filter === f && s.chipTextOn]}>
               {f === 'all' ? 'All Jobs' : f === 'in_progress' ? 'In Progress' : 'Completed'}
             </Text>
@@ -88,7 +112,11 @@ export default function ContractorJobsScreen() {
                 ) : null}
               </View>
               {job.status === 'in_progress' && (
-                <TouchableOpacity style={s.btnComplete}>
+                <TouchableOpacity
+                  style={s.btnComplete}
+                  activeOpacity={0.8}
+                  onPress={() => handleMarkComplete(job.id)}
+                >
                   <Text style={s.btnCompleteText}>Mark Complete</Text>
                 </TouchableOpacity>
               )}

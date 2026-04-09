@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { auth, db } from '../services/firebase'
@@ -60,11 +60,55 @@ export default function ContractorProfileScreen() {
   }
 
   const menuItems = [
-    { icon: 'clipboard', label: 'Verification Status' },
-    { icon: 'shield-checkmark', label: 'Insurance & License' },
-    { icon: 'location', label: 'Service Area' },
-    { icon: 'card', label: 'Subscription & Billing' },
-    { icon: 'notifications', label: 'Notification Settings' },
+    {
+      icon: 'clipboard',
+      label: 'Verification Status',
+      onPress: () => Alert.alert(
+        'Verification Status',
+        profile?.bgc_status === 'clear'
+          ? 'Your background check is complete and your Bridge Verified badge is active.'
+          : 'Your verification is in progress. You will be notified by email once complete.',
+        [{ text: 'OK' }]
+      ),
+    },
+    {
+      icon: 'shield-checkmark',
+      label: 'Insurance & License',
+      onPress: () => Alert.alert(
+        'Insurance & License',
+        'To update your insurance certificate or license information, please visit bridgeverified.com from a web browser.',
+        [{ text: 'OK' }]
+      ),
+    },
+    {
+      icon: 'location',
+      label: 'Service Area',
+      onPress: () => Alert.alert(
+        'Service Area',
+        profile?.serviceArea
+          ? `Your current service area: ${profile.serviceArea}. To update your service area, please visit bridgeverified.com from a web browser.`
+          : 'To set or update your service area, please visit bridgeverified.com from a web browser.',
+        [{ text: 'OK' }]
+      ),
+    },
+    {
+      icon: 'card',
+      label: 'Subscription & Billing',
+      onPress: () => Alert.alert(
+        'Subscription & Billing',
+        'Your Bridge Pro subscription is managed at bridgeverified.com. Visit from a web browser to update your payment method or view billing history.',
+        [{ text: 'OK' }]
+      ),
+    },
+    {
+      icon: 'notifications',
+      label: 'Notification Settings',
+      onPress: () => Alert.alert(
+        'Notification Settings',
+        'Storm alert notifications can be managed in your device Settings under Notifications → Bridge.',
+        [{ text: 'Open Settings', onPress: () => Linking.openSettings() }, { text: 'OK', style: 'cancel' }]
+      ),
+    },
   ]
 
   return (
@@ -105,17 +149,27 @@ export default function ContractorProfileScreen() {
             )
           })}
         </View>
-        <TouchableOpacity style={[s.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSaveServices} disabled={saving}>
+        <TouchableOpacity
+          style={[s.saveBtn, saving && { opacity: 0.6 }]}
+          onPress={handleSaveServices}
+          disabled={saving}
+          activeOpacity={0.8}
+        >
           {saving
             ? <ActivityIndicator color={WHITE} size="small" />
-            : <Text style={s.saveBtnText}>{saved ? 'Services Saved' : 'Save Services'}</Text>
+            : <Text style={s.saveBtnText}>{saved ? 'Services Saved ✓' : 'Save Services'}</Text>
           }
         </TouchableOpacity>
 
         <Text style={[s.sectionTitle, { marginTop: 24, marginBottom: 12 }]}>Account</Text>
         <View style={s.menuCard}>
           {menuItems.map((item, i, arr) => (
-            <TouchableOpacity key={item.label} style={[s.menuRow, i === arr.length - 1 && { borderBottomWidth: 0 }]}>
+            <TouchableOpacity
+              key={item.label}
+              style={[s.menuRow, i === arr.length - 1 && { borderBottomWidth: 0 }]}
+              onPress={item.onPress}
+              activeOpacity={0.7}
+            >
               <Ionicons name={item.icon} size={18} color={AMBER2} style={{ marginRight: 14 }} />
               <Text style={s.menuLabel}>{item.label}</Text>
               <Ionicons name="chevron-forward" size={16} color={MUTED} />
@@ -123,7 +177,11 @@ export default function ContractorProfileScreen() {
           ))}
         </View>
 
-        <TouchableOpacity style={s.signOutBtn} onPress={handleSignOut}>
+        <TouchableOpacity
+          style={s.signOutBtn}
+          onPress={handleSignOut}
+          activeOpacity={0.8}
+        >
           <Text style={s.signOutText}>Sign Out</Text>
         </TouchableOpacity>
       </ScrollView>
