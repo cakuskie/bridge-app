@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { onAuthStateChanged, signOut, deleteUser, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
@@ -111,7 +111,7 @@ export default function ProfileScreen({ navigation }) {
     {
       icon: 'notifications',
       label: 'Alert Settings',
-      onPress: () => Alert.alert('Alert Settings', 'Storm alert preferences can be managed in your device notification settings.'),
+      onPress: () => Alert.alert('Alert Settings', 'Storm alert preferences can be managed in your device notification settings.', [{ text: 'Open Settings', onPress: () => Linking.openSettings() }, { text: 'OK', style: 'cancel' }]),
     },
     {
       icon: 'lock-closed',
