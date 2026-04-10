@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore'
 import { db, auth } from '../services/firebase'
 
 const NAVY=  '#0F1F35'
@@ -13,12 +13,18 @@ const MUTED= '#7B8FA6'
 const WHITE= '#FAFAFA'
 
 export default function ContractorDashboardScreen() {
-  const [leads, setLeads]     = useState([])
-  const [loading, setLoading] = useState(true)
+  const [leads, setLeads]       = useState([])
+  const [profile, setProfile]   = useState(null)
+  const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
     const uid = auth.currentUser?.uid
     if (!uid) return
+
+    getDoc(doc(db, 'contractors', uid)).then(snap => {
+      if (snap.exists()) setProfile(snap.data())
+    })
+
     const q = query(collection(db, 'leads'), where('contractorId', '==', uid), orderBy('createdAt', 'desc'))
     const unsub = onSnapshot(q, snap => {
       setLeads(snap.docs.map(d => ({ id: d.id, ...d.data() })))
@@ -27,7 +33,18 @@ export default function ContractorDashboardScreen() {
     return unsub
   }, [])
 
+  const isVerified = profile?.bgc_status === 'clear' &&
+    (profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing')
+
   async function handleAccept(leadId) {
+    if (!isVerified) {
+      Alert.alert(
+        'Verification Required',
+        'To respond to leads you need to complete your background check and activate your subscription. Visit bridgeverified.com from a web browser to get started.',
+        [{ text: 'OK' }]
+      )
+      return
+    }
     try {
       await updateDoc(doc(db, 'leads', leadId), {
         status: 'quoted',
@@ -80,6 +97,19 @@ export default function ContractorDashboardScreen() {
         <Text style={s.muted}>Bridge Pro · Contractor</Text>
         <Text style={s.heading}>Dashboard</Text>
 
+        {/* Verification banner — show if not yet verified */}
+        {profile && !isVerified && (
+          <View style={s.verifyBanner}>
+            <Ionicons name="alert-circle" size={20} color={AMBER2} style={{ marginRight: 10, marginTop: 1 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.verifyTitle}>Complete Verification to Respond to Leads</Text>
+              <Text style={s.verifyBody}>
+                Visit bridgeverified.com from a web browser to complete your background check and activate your subscription.
+              </Text>
+            </View>
+          </View>
+        )}
+
         <View style={s.stormBanner}>
           <Ionicons name="thunderstorm" size={16} color={AMBER2} style={{ marginRight: 8, marginTop: 2 }} />
           <View style={{ flex: 1 }}>
@@ -110,7 +140,7 @@ export default function ContractorDashboardScreen() {
         ) : leads.length === 0 ? (
           <View style={s.emptyCard}>
             <Ionicons name="notifications-outline" size={36} color={MUTED} style={{ marginBottom: 12 }} />
-            <Text style={s.emptyText}>No leads yet — you'll be notified when a storm alert fires in your area.</Text>
+            <Text style={s.emptyText}>No leads yet — you will be notified when a storm alert fires in your area.</Text>
           </View>
         ) : leads.map(lead => {
           const sc = statusColor(lead.status)
@@ -129,11 +159,11 @@ export default function ContractorDashboardScreen() {
               {lead.status === 'new' && (
                 <View style={s.leadBtns}>
                   <TouchableOpacity
-                    style={s.btnAccept}
+                    style={[s.btnAccept, !isVerified && s.btnAcceptLocked]}
                     activeOpacity={0.8}
                     onPress={() => handleAccept(lead.id)}
                   >
-                    <Text style={s.btnAcceptText}>Accept Lead</Text>
+                    <Text style={s.btnAcceptText}>{isVerified ? 'Accept Lead' : 'Verify to Accept'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={s.btnDecline}
@@ -153,30 +183,34 @@ export default function ContractorDashboardScreen() {
 }
 
 const s = StyleSheet.create({
-  heading:       { fontSize: 26, fontWeight: '700', color: WHITE, marginBottom: 16 },
-  muted:         { fontSize: 12, color: MUTED, marginBottom: 4 },
-  stormBanner:   { backgroundColor: 'rgba(224,123,42,0.12)', borderWidth: 1, borderColor: 'rgba(224,123,42,0.4)', borderRadius: 14, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'flex-start' },
-  stormBadge:    { fontSize: 10, fontWeight: '800', color: AMBER2, letterSpacing: 0.5, marginBottom: 4 },
-  stormTitle:    { fontSize: 14, fontWeight: '700', color: WHITE, marginBottom: 3 },
-  stormBody:     { fontSize: 12, color: 'rgba(255,255,255,0.5)' },
-  statsRow:      { flexDirection: 'row', gap: 10, marginBottom: 24 },
-  statBox:       { flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: 14, alignItems: 'center' },
-  statNum:       { fontSize: 22, fontWeight: '700', color: WHITE },
-  statLabel:     { fontSize: 10, color: MUTED, marginTop: 2 },
-  sectionTitle:  { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
-  emptyCard:     { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 20, alignItems: 'center' },
-  emptyText:     { fontSize: 13, color: MUTED, textAlign: 'center', lineHeight: 20 },
-  leadCard:      { backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 14, padding: 14, marginBottom: 10 },
-  leadCardNew:   { backgroundColor: 'rgba(224,123,42,0.08)', borderColor: 'rgba(224,123,42,0.25)' },
-  leadTop:       { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
-  leadName:      { fontSize: 13, fontWeight: '700', color: WHITE },
-  leadAddr:      { fontSize: 11, color: MUTED, marginTop: 2 },
-  statusBadge:   { borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3 },
-  statusText:    { fontSize: 9, fontWeight: '800' },
-  leadService:   { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 10 },
-  leadBtns:      { flexDirection: 'row', gap: 8 },
-  btnAccept:     { flex: 1, backgroundColor: AMBER, borderRadius: 10, padding: 10, alignItems: 'center' },
-  btnAcceptText: { color: WHITE, fontWeight: '800', fontSize: 12 },
-  btnDecline:    { backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 10, padding: 10, paddingHorizontal: 16, alignItems: 'center' },
-  btnDeclineText:{ color: 'rgba(255,255,255,0.5)', fontSize: 12 },
+  heading:        { fontSize: 26, fontWeight: '700', color: WHITE, marginBottom: 16 },
+  muted:          { fontSize: 12, color: MUTED, marginBottom: 4 },
+  verifyBanner:   { backgroundColor: 'rgba(224,123,42,0.1)', borderWidth: 1, borderColor: 'rgba(224,123,42,0.35)', borderRadius: 14, padding: 14, marginBottom: 16, flexDirection: 'row', alignItems: 'flex-start' },
+  verifyTitle:    { fontSize: 13, fontWeight: '700', color: AMBER2, marginBottom: 4 },
+  verifyBody:     { fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 18 },
+  stormBanner:    { backgroundColor: 'rgba(224,123,42,0.12)', borderWidth: 1, borderColor: 'rgba(224,123,42,0.4)', borderRadius: 14, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'flex-start' },
+  stormBadge:     { fontSize: 10, fontWeight: '800', color: AMBER2, letterSpacing: 0.5, marginBottom: 4 },
+  stormTitle:     { fontSize: 14, fontWeight: '700', color: WHITE, marginBottom: 3 },
+  stormBody:      { fontSize: 12, color: 'rgba(255,255,255,0.5)' },
+  statsRow:       { flexDirection: 'row', gap: 10, marginBottom: 24 },
+  statBox:        { flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: 14, alignItems: 'center' },
+  statNum:        { fontSize: 22, fontWeight: '700', color: WHITE },
+  statLabel:      { fontSize: 10, color: MUTED, marginTop: 2 },
+  sectionTitle:   { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
+  emptyCard:      { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 20, alignItems: 'center' },
+  emptyText:      { fontSize: 13, color: MUTED, textAlign: 'center', lineHeight: 20 },
+  leadCard:       { backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 14, padding: 14, marginBottom: 10 },
+  leadCardNew:    { backgroundColor: 'rgba(224,123,42,0.08)', borderColor: 'rgba(224,123,42,0.25)' },
+  leadTop:        { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
+  leadName:       { fontSize: 13, fontWeight: '700', color: WHITE },
+  leadAddr:       { fontSize: 11, color: MUTED, marginTop: 2 },
+  statusBadge:    { borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3 },
+  statusText:     { fontSize: 9, fontWeight: '800' },
+  leadService:    { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 10 },
+  leadBtns:       { flexDirection: 'row', gap: 8 },
+  btnAccept:      { flex: 1, backgroundColor: AMBER, borderRadius: 10, padding: 10, alignItems: 'center' },
+  btnAcceptLocked:{ backgroundColor: 'rgba(224,123,42,0.4)' },
+  btnAcceptText:  { color: WHITE, fontWeight: '800', fontSize: 12 },
+  btnDecline:     { backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 10, padding: 10, paddingHorizontal: 16, alignItems: 'center' },
+  btnDeclineText: { color: 'rgba(255,255,255,0.5)', fontSize: 12 },
 })

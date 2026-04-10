@@ -6,6 +6,8 @@ import { loginUser, registerUser } from '../../services/firebase'
 
 const NAVY  = '#0F1F35'
 const AMBER = '#E07B2A'
+const AMBER2= '#F59E0B'
+const GREEN = '#10B981'
 const MUTED = '#7B8FA6'
 const WHITE = '#FAFAFA'
 
@@ -36,11 +38,14 @@ function BridgeLogo() {
   )
 }
 
+const ACCOUNT_TYPES = ['Homeowner', 'Contractor']
+
 export default function LoginScreen() {
-  const [mode, setMode]       = useState('login')
-  const [form, setForm]       = useState({ name: '', email: '', password: '', phone: '', address: '', zip: '' })
-  const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState('')
+  const [mode, setMode]         = useState('login')
+  const [accountType, setAccountType] = useState('Homeowner')
+  const [form, setForm]         = useState({ name: '', email: '', password: '', phone: '', address: '', zip: '', company: '', serviceArea: '' })
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState('')
 
   function update(field, value) {
     setForm(f => ({ ...f, [field]: value }))
@@ -53,7 +58,8 @@ export default function LoginScreen() {
       if (mode === 'login') {
         await loginUser(form.email, form.password)
       } else {
-        await registerUser('homeowner', form)
+        const type = accountType === 'Contractor' ? 'contractor' : 'homeowner'
+        await registerUser(type, form)
       }
     } catch (e) {
       setError(e.message.replace('Firebase: ', '').replace(/\(auth.*\)/, '').trim())
@@ -61,6 +67,8 @@ export default function LoginScreen() {
       setLoading(false)
     }
   }
+
+  const isContractor = accountType === 'Contractor' && mode === 'signup'
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: NAVY }}>
@@ -70,15 +78,45 @@ export default function LoginScreen() {
           <BridgeLogo />
           <Text style={s.tagline}>Bridging the gap between doubt and clarity.</Text>
 
+          {/* Sign In / Create Account toggle */}
           <View style={s.toggle}>
-            <TouchableOpacity style={[s.tBtn, mode === 'login' && s.tBtnOn]} onPress={() => setMode('login')}>
+            <TouchableOpacity style={[s.tBtn, mode === 'login' && s.tBtnOn]} onPress={() => setMode('login')} activeOpacity={0.8}>
               <Text style={[s.tBtnText, mode === 'login' && s.tBtnTextOn]}>Sign In</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[s.tBtn, mode === 'signup' && s.tBtnOn]} onPress={() => setMode('signup')}>
+            <TouchableOpacity style={[s.tBtn, mode === 'signup' && s.tBtnOn]} onPress={() => setMode('signup')} activeOpacity={0.8}>
               <Text style={[s.tBtnText, mode === 'signup' && s.tBtnTextOn]}>Create Account</Text>
             </TouchableOpacity>
           </View>
 
+          {/* Account type selector — only show on signup */}
+          {mode === 'signup' && (
+            <View style={s.typeRow}>
+              {ACCOUNT_TYPES.map(t => (
+                <TouchableOpacity
+                  key={t}
+                  style={[s.typeBtn, accountType === t && s.typeBtnOn]}
+                  onPress={() => setAccountType(t)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[s.typeBtnText, accountType === t && s.typeBtnTextOn]}>
+                    {t === 'Homeowner' ? '🏠 Homeowner' : '🔨 Contractor'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Contractor info banner */}
+          {isContractor && (
+            <View style={s.contractorBanner}>
+              <Text style={s.contractorBannerTitle}>Contractor Account</Text>
+              <Text style={s.contractorBannerBody}>
+                Create your account below to access the Bridge contractor dashboard. To unlock lead responses, complete your background check and subscription at bridgeverified.com after signing up.
+              </Text>
+            </View>
+          )}
+
+          {/* Common fields */}
           {mode === 'signup' && (
             <TextInput
               style={s.input}
@@ -107,7 +145,8 @@ export default function LoginScreen() {
             secureTextEntry
           />
 
-          {mode === 'signup' && (
+          {/* Homeowner-specific fields */}
+          {mode === 'signup' && accountType === 'Homeowner' && (
             <>
               <TextInput
                 style={s.input}
@@ -135,6 +174,34 @@ export default function LoginScreen() {
             </>
           )}
 
+          {/* Contractor-specific fields */}
+          {isContractor && (
+            <>
+              <TextInput
+                style={s.input}
+                placeholder="Company Name"
+                placeholderTextColor={MUTED}
+                value={form.company}
+                onChangeText={v => update('company', v)}
+              />
+              <TextInput
+                style={s.input}
+                placeholder="Phone"
+                placeholderTextColor={MUTED}
+                value={form.phone}
+                onChangeText={v => update('phone', v)}
+                keyboardType="phone-pad"
+              />
+              <TextInput
+                style={s.input}
+                placeholder="Service Area (e.g. San Antonio, TX)"
+                placeholderTextColor={MUTED}
+                value={form.serviceArea}
+                onChangeText={v => update('serviceArea', v)}
+              />
+            </>
+          )}
+
           {error ? <Text style={s.error}>{error}</Text> : null}
 
           <TouchableOpacity
@@ -156,15 +223,23 @@ export default function LoginScreen() {
 }
 
 const s = StyleSheet.create({
-  wrap:       { flexGrow: 1, padding: 28, justifyContent: 'center' },
-  tagline:    { fontSize: 13, color: MUTED, textAlign: 'center', marginBottom: 32 },
-  toggle:     { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 4, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-  tBtn:       { flex: 1, padding: 10, borderRadius: 9, alignItems: 'center' },
-  tBtnOn:     { backgroundColor: AMBER },
-  tBtnText:   { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },
-  tBtnTextOn: { color: WHITE },
-  input:      { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 14, fontSize: 14, color: WHITE, marginBottom: 12 },
-  error:      { fontSize: 13, color: '#FCA5A5', marginBottom: 12, textAlign: 'center' },
-  submitBtn:  { backgroundColor: AMBER, borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 4 },
-  submitText: { color: WHITE, fontWeight: '800', fontSize: 15 },
+  wrap:                  { flexGrow: 1, padding: 28, justifyContent: 'center' },
+  tagline:               { fontSize: 13, color: MUTED, textAlign: 'center', marginBottom: 32 },
+  toggle:                { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 4, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  tBtn:                  { flex: 1, padding: 10, borderRadius: 9, alignItems: 'center' },
+  tBtnOn:                { backgroundColor: AMBER },
+  tBtnText:              { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },
+  tBtnTextOn:            { color: WHITE },
+  typeRow:               { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  typeBtn:               { flex: 1, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 12, padding: 12, alignItems: 'center' },
+  typeBtnOn:             { borderColor: AMBER, backgroundColor: 'rgba(224,123,42,0.1)' },
+  typeBtnText:           { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.45)' },
+  typeBtnTextOn:         { color: AMBER2 },
+  contractorBanner:      { backgroundColor: 'rgba(16,185,129,0.08)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.25)', borderRadius: 12, padding: 14, marginBottom: 16 },
+  contractorBannerTitle: { fontSize: 13, fontWeight: '700', color: GREEN, marginBottom: 6 },
+  contractorBannerBody:  { fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 18 },
+  input:                 { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 12, padding: 14, fontSize: 14, color: WHITE, marginBottom: 12 },
+  error:                 { fontSize: 13, color: '#FCA5A5', marginBottom: 12, textAlign: 'center' },
+  submitBtn:             { backgroundColor: AMBER, borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 4 },
+  submitText:            { color: WHITE, fontWeight: '800', fontSize: 15 },
 })
