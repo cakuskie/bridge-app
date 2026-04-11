@@ -2,7 +2,7 @@
   "expo": {
     "name": "Bridge Verified",
     "slug": "bridge-app",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/Bridgeicon.png",
     "userInterfaceStyle": "dark",
@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.bridgetx.app",
-      "buildNumber": "7",
+      "buildNumber": "8",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Bridge uses your camera to photograph roof or storm damage so contractors can provide accurate repair estimates.",
