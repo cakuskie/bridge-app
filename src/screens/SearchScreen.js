@@ -110,7 +110,9 @@ export default function SearchScreen() {
               ))}
             </View>
             <Text style={s.label}>PROPERTY ADDRESS</Text>
-            <TextInput value={form.address} onChangeText={v => setForm(f => ({ ...f, address: v }))} placeholder="Your property address" placeholderTextColor="rgba(255,255,255,0.3)" style={s.input} />
+            <TextInput value={form.address} onChangeText={v => setForm(f => ({ ...f, address: v }))} placeholder="Your property address"
+            autoComplete="street-address"
+            textContentType="streetAddressLine1" placeholderTextColor="rgba(255,255,255,0.3)" style={s.input} />
             <Text style={s.label}>DESCRIBE THE DAMAGE</Text>
             <TextInput value={form.description} onChangeText={v => setForm(f => ({ ...f, description: v }))} placeholder="Describe what you're seeing…" placeholderTextColor="rgba(255,255,255,0.3)" multiline style={[s.input, { height: 80 }]} />
             <TouchableOpacity style={s.submitBtn} onPress={handleRequest}>

@@ -135,6 +135,8 @@ export default function LoginScreen() {
             onChangeText={v => update('email', v)}
             autoCapitalize="none"
             keyboardType="email-address"
+            autoComplete="email"
+            textContentType="emailAddress"
           />
           <TextInput
             style={s.input}
@@ -143,6 +145,8 @@ export default function LoginScreen() {
             value={form.password}
             onChangeText={v => update('password', v)}
             secureTextEntry
+            autoComplete="current-password"
+            textContentType="password"
           />
 
           {/* Homeowner-specific fields */}
@@ -162,6 +166,8 @@ export default function LoginScreen() {
                 placeholderTextColor={MUTED}
                 value={form.address}
                 onChangeText={v => update('address', v)}
+                autoComplete="street-address"
+                textContentType="streetAddressLine1"
               />
               <TextInput
                 style={s.input}
@@ -198,6 +204,8 @@ export default function LoginScreen() {
                 placeholderTextColor={MUTED}
                 value={form.serviceArea}
                 onChangeText={v => update('serviceArea', v)}
+                autoComplete="postal-address"
+                textContentType="addressCity"
               />
             </>
           )}
