@@ -211,6 +211,11 @@ export default function LoginScreen() {
           )}
 
           {error ? <Text style={s.error}>{error}</Text> : null}
+          {isContractor && (
+            <Text style={s.tos}>
+              By creating an account you agree to Bridge's Terms of Service, including the requirement that all leads originating from Bridge be processed through the platform. View terms at bridgeverified.com/terms
+            </Text>
+          )}
 
           <TouchableOpacity
             style={s.submitBtn}
@@ -250,4 +255,5 @@ const s = StyleSheet.create({
   error:                 { fontSize: 13, color: '#FCA5A5', marginBottom: 12, textAlign: 'center' },
   submitBtn:             { backgroundColor: AMBER, borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 4 },
   submitText:            { color: WHITE, fontWeight: '800', fontSize: 15 },
+  tos:                   { fontSize: 11, color: 'rgba(255,255,255,0.35)', textAlign: 'center', lineHeight: 16, marginBottom: 12 },
 })
