@@ -18,7 +18,8 @@
       },
       "cache": {
         "disabled": true
-      }
+      },
+      "autoIncrement": true
     }
   },
   "submit": {
