@@ -1,19 +1,31 @@
 // Bridge Weather Service — React Native
 // NWS alerts are free and unlimited — no API key needed
-// Tomorrow.io key stored in app config
-
-const TOMORROW_KEY = 'your_tomorrow_api_key_here' // replace when ready
 
 const SEVERITY_RANK = { Extreme: 4, Severe: 3, Moderate: 2, Minor: 1, Unknown: 0 }
+
+// ─── BRIDGE ALERT FILTER ───────────────────────────────────────
+// Only show alerts relevant to storm restoration:
+// hail, thunderstorm, tornado, high wind
+// Excludes: rip current, coastal flood, marine, freeze, fog, etc.
+const RELEVANT_EVENTS = [
+  'thunderstorm',
+  'tornado',
+  'hail',
+  'wind',
+  'severe',
+]
+
+function isRelevantAlert(event = '') {
+  const e = event.toLowerCase()
+  return RELEVANT_EVENTS.some(keyword => e.includes(keyword))
+}
 
 export function nwsIcon(event = '') {
   const e = event.toLowerCase()
   if (e.includes('tornado'))      return '🌪️'
   if (e.includes('hail'))         return '⚡'
-  if (e.includes('flood'))        return '🌊'
   if (e.includes('thunderstorm')) return '⛈️'
   if (e.includes('wind'))         return '💨'
-  if (e.includes('winter') || e.includes('snow') || e.includes('ice')) return '❄️'
   return '⚠️'
 }
 
@@ -37,7 +49,9 @@ export async function fetchTickerAlerts() {
   try {
     const nwsAlerts = await fetchNWSAlerts()
     const significant = nwsAlerts
+      .filter(a => isRelevantAlert(a.event))
       .filter(a => ['Minor','Moderate','Severe','Extreme'].includes(a.severity))
+      .filter(a => !a.expires || new Date(a.expires) > new Date())
       .sort((a, b) => (SEVERITY_RANK[b.severity] ?? 0) - (SEVERITY_RANK[a.severity] ?? 0))
 
     if (significant.length > 0) {
@@ -59,11 +73,11 @@ export async function fetchTickerAlerts() {
     }
 
     return [
-      { county: 'Dallas / Fort Worth',    icon: '✅', desc: 'No Active Alerts' },
-      { county: 'Houston Metro',           icon: '✅', desc: 'No Active Alerts' },
-      { county: 'San Antonio',             icon: '✅', desc: 'No Active Alerts' },
-      { county: 'Austin / Central TX',     icon: '✅', desc: 'No Active Alerts' },
-      { county: 'Lubbock / Panhandle',     icon: '✅', desc: 'No Active Alerts' },
+      { county: 'Dallas / Fort Worth',    icon: '✅', desc: 'No Active Storm Alerts' },
+      { county: 'Houston Metro',           icon: '✅', desc: 'No Active Storm Alerts' },
+      { county: 'San Antonio',             icon: '✅', desc: 'No Active Storm Alerts' },
+      { county: 'Austin / Central TX',     icon: '✅', desc: 'No Active Storm Alerts' },
+      { county: 'Lubbock / Panhandle',     icon: '✅', desc: 'No Active Storm Alerts' },
     ]
   } catch (err) {
     console.error('NWS fetch failed:', err)
@@ -75,16 +89,14 @@ export async function fetchHeroCondition() {
   try {
     const nwsAlerts = await fetchNWSAlerts()
     const top = nwsAlerts
+      .filter(a => isRelevantAlert(a.event))
       .filter(a => ['Moderate','Severe','Extreme'].includes(a.severity))
       .sort((a, b) => (SEVERITY_RANK[b.severity] ?? 0) - (SEVERITY_RANK[a.severity] ?? 0))[0]
 
     if (top) {
-      const event = top.event.toLowerCase()
-      let icon  = nwsIcon(top.event)
-      let level = 'severe'
-      let label = top.event
-      if (top.severity === 'Extreme') level = 'extreme'
-      return { level, icon, label, location: top.area.split(';')[0].trim() }
+      const icon  = nwsIcon(top.event)
+      const level = top.severity === 'Extreme' ? 'extreme' : 'severe'
+      return { level, icon, label: top.event, location: top.area.split(';')[0].trim() }
     }
 
     return { level: 'clear', icon: '✅', label: 'All Clear', location: 'Texas' }
